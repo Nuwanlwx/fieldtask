@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="FieldTask.Api/FieldTask.Api.csproj" />
+  <Project Path="FieldTask.Tests/FieldTask.Tests.csproj" />
+</Solution>
