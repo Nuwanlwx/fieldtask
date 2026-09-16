@@ -10,4 +10,12 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11" />
   </ItemGroup>
 
+  <!-- Include shared Domain source files located at ../Domain so they appear in Solution Explorer
+       and are compiled into this project. Using Link places them under a virtual Domain folder. -->
+  <ItemGroup>
+    <Compile Include="..\Domain\**\*.cs">
+      <Link>Domain\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Compile>
+  </ItemGroup>
+
 </Project>
