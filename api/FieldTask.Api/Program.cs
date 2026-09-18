@@ -1,15 +1,30 @@
+using FieldTask.Api.Data;
+using Microsoft.EntityFrameworkCore;
+using Scalar.AspNetCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
+builder.Services.AddDbContext<FieldTaskDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
+
 var app = builder.Build();
+
+// Apply any pending migrations and seed demo data on startup.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<FieldTaskDbContext>();
+    db.Database.Migrate();
+    DbSeeder.Seed(db);
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference(); // interactive API docs at /scalar/v1
 }
 
 app.UseHttpsRedirection();
@@ -32,6 +47,17 @@ app.MapGet("/weatherforecast", () =>
     return forecast;
 })
 .WithName("GetWeatherForecast");
+
+// Add a root endpoint so requests to '/' return useful information or redirect
+app.MapGet("/", (HttpContext ctx) =>
+{
+    if (app.Environment.IsDevelopment())
+    {
+        return Results.Redirect("/scalar/v1");
+    }
+
+    return Results.Redirect("/weatherforecast");
+});
 
 app.Run();
 
