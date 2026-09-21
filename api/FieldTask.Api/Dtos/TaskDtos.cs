@@ -1,4 +1,6 @@
 using FieldTask.Api.Domain.Enums;
+using System.ComponentModel.DataAnnotations;
+
 
 namespace FieldTask.Api.Dtos;
 
@@ -27,8 +29,12 @@ public record TaskDetailDto(
 public record TaskNoteDto(int Id, string Text, DateTime CreatedAt);
 
 // Input for POST /tasks
-public record CreateTaskDto(string Title, int Priority);
+public record CreateTaskDto(
+    [Required, StringLength(200)] string Title,
+    [Range(1, 5)] int Priority);
 
 // Input for PUT /tasks/{id}/assign — RowVersion is what the client last saw,
 // used to detect if someone else changed the task in the meantime.
-public record AssignTaskDto(int TechnicianId, byte[] RowVersion);
+public record AssignTaskDto(
+    [Range(1, int.MaxValue)] int TechnicianId,
+    [Required] byte[] RowVersion);
