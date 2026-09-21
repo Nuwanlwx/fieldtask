@@ -20,7 +20,7 @@ public class TaskService(FieldTaskDbContext db, IClock clock) : ITaskService
             query = query.Where(t => t.Status == status);
 
         if (!string.IsNullOrWhiteSpace(search))
-            query = query.Where(t => t.Title.Contains(search));
+            query = query.Where(t => EF.Functions.Like(t.Title, $"%{search}%"));
 
         var total = await query.CountAsync(ct);
 
