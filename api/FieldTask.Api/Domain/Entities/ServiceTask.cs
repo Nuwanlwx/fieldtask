@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using FieldTask.Api.Domain.Enums;
+﻿using FieldTask.Api.Domain.Enums;
 
 namespace FieldTask.Api.Domain.Entities;
 
@@ -18,7 +17,7 @@ public class ServiceTask
     // Navigation property: One ServiceTask has many TaskNotes
     public ICollection<TaskNote> Notes { get; set; } = new List<TaskNote>();
 
-    // Concurrency Token for optimistic locking
-    [Timestamp]
+    // Concurrency token for optimistic locking. SQLite has no auto-generated rowversion
+    // (SQL Server would use [Timestamp]), so FieldTaskDbContext stamps a new value on every write.
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 }                                                                       

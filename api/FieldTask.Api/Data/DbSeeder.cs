@@ -7,16 +7,19 @@ public static class DbSeeder
 {
     public static void Seed(FieldTaskDbContext db)
     {
-        if (db.Technicians.Any()) return; // already seeded, do nothing
-
-        var technicians = new List<Technician>
+        // Each table is checked on its own, so a partly seeded database heals itself.
+        if (!db.Technicians.Any())
         {
-            new() { Name = "Alice Chen", Skill = "HVAC" },
-            new() { Name = "Bruno Silva", Skill = "Electrical" },
-            new() { Name = "Chidi Okafor", Skill = "Plumbing" },
-        };
-        db.Technicians.AddRange(technicians);
-        db.SaveChanges();
+            db.Technicians.AddRange(
+                new Technician { Name = "Alice Chen", Skill = "HVAC" },
+                new Technician { Name = "Bruno Silva", Skill = "Electrical" },
+                new Technician { Name = "Chidi Okafor", Skill = "Plumbing" });
+            db.SaveChanges();
+        }
+
+        if (db.ServiceTasks.Any()) return; // already seeded, do nothing
+
+        var technicians = db.Technicians.OrderBy(t => t.Id).ToList();
 
         var titles = new[]
         {
