@@ -18,11 +18,4 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
-  <!-- Include shared Domain source files so tests can reference domain types. -->
-  <ItemGroup>
-    <Compile Include="..\Domain\**\*.cs">
-      <Link>Domain\%(RecursiveDir)%(Filename)%(Extension)</Link>
-    </Compile>
-  </ItemGroup>
-
 </Project>
