@@ -1,4 +1,5 @@
 using FieldTask.Api.Data;
+using FieldTask.Api.Services;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 
@@ -9,7 +10,8 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddDbContext<FieldTaskDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
-
+builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddSingleton<IClock, SystemClock>();
 var app = builder.Build();
 
 // Apply any pending migrations and seed demo data on startup.
