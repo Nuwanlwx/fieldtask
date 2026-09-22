@@ -6,7 +6,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FieldTask.Api.Services;
 
-public class TaskService(FieldTaskDbContext db, IClock clock) : ITaskService
+public class TaskService(FieldTaskDbContext db, IClock clock, ILogger<TaskService> logger) : ITaskService
+
 {
     public async Task<PagedResult<TaskListItemDto>> GetTasksAsync(
         int page, int pageSize, TaskStatusEnum? status, string? search, CancellationToken ct = default)
@@ -97,8 +98,11 @@ public class TaskService(FieldTaskDbContext db, IClock clock) : ITaskService
         }
         catch (DbUpdateConcurrencyException)
         {
+            logger.LogWarning("Concurrency conflict assigning task {TaskId} to technician {TechnicianId}", id, dto.TechnicianId);
             return new AssignTaskResult(AssignOutcome.ConcurrencyConflict, null);
         }
+
+        
 
         await db.Entry(task).Reference(t => t.Technician).LoadAsync(ct);
         return new AssignTaskResult(AssignOutcome.Success, ToDetailDto(task));

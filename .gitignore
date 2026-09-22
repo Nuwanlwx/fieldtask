@@ -23,6 +23,9 @@ build/
 *.sqlite
 *.sqlite3
 
+# Serilog file sink output
+Logs/
+
 # ---- Node / Angular ----
 node_modules/
 dist/
