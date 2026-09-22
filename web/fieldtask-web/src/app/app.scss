@@ -1,0 +1,25 @@
+header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #ddd;
+}
+
+nav {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+nav a {
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+}
+
+nav a.active {
+  color: #1976d2;
+  text-decoration: underline;
+}
+
+main {
+  padding: 1.5rem;
+}
