@@ -18,4 +18,8 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\FieldTask.Api\FieldTask.Api.csproj" />
+  </ItemGroup>
+
 </Project>
