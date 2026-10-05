@@ -1,0 +1,58 @@
+<a routerLink="/tasks">&larr; Back to list</a>
+
+@if (loading()) {
+  <p>Loading…</p>
+}
+
+@if (error()) {
+  <p class="error" role="alert">{{ error() }}</p>
+  <button type="button" (click)="reload()">Retry</button>
+}
+
+@if (!loading() && !error() && task(); as t) {
+  <h2>{{ t.title }}</h2>
+  <dl>
+    <dt>Status</dt>
+    <dd>{{ t.status }}</dd>
+    <dt>Priority</dt>
+    <dd>{{ t.priority }}</dd>
+    <dt>Created</dt>
+    <dd>{{ t.createdAt | date: 'medium' }}</dd>
+    <dt>Technician</dt>
+    <dd>{{ t.technicianName ?? 'Unassigned' }}</dd>
+  </dl>
+
+  <h3>Notes</h3>
+  @if (t.notes.length) {
+    <ul>
+      @for (note of t.notes; track note.id) {
+        <li>{{ note.text }} <small>({{ note.createdAt | date: 'short' }})</small></li>
+      }
+    </ul>
+  } @else {
+    <p>No notes yet.</p>
+  }
+
+  <h3>Assign technician</h3>
+  <form (ngSubmit)="assign()">
+    <label>
+      Technician Id
+      <input name="technicianId" type="number" min="1" [(ngModel)]="technicianId" required />
+    </label>
+    <button type="submit" [disabled]="assigning()">
+      {{ assigning() ? 'Assigning…' : 'Assign' }}
+    </button>
+  </form>
+
+  <!-- Note: picking a technician by typing a raw id is a stand-in for a real
+       technician-picker dropdown — there's no GET /technicians endpoint yet. -->
+
+  @if (assignConflict()) {
+    <p class="error" role="alert">
+      This task was changed by someone else since you loaded it. Reload it and try again.
+    </p>
+    <button type="button" (click)="reload()">Reload</button>
+  } @else if (assignError()) {
+    <p class="error" role="alert">{{ assignError() }}</p>
+  }
+}

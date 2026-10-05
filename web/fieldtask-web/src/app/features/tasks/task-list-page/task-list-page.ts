@@ -1,13 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { TaskStatus } from '../../../core/models/task.models';
 import { TasksPageActions } from '../state/tasks.actions';
 import { tasksFeature } from '../state/tasks.reducer';
 
 @Component({
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   selector: 'app-task-list-page',
   styleUrl: './task-list-page.scss',
   templateUrl: './task-list-page.html',

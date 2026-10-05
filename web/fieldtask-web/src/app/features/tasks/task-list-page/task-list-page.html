@@ -43,7 +43,7 @@
     <tbody>
       @for (task of items(); track task.id) {
         <tr>
-          <td>{{ task.id }}</td>
+          <td><a [routerLink]="['/tasks', task.id]">{{ task.id }}</a></td>
           <td>{{ task.title }}</td>
           <td>{{ task.status }}</td>
           <td>{{ task.priority }}</td>
