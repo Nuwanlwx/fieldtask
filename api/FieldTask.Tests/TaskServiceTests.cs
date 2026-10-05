@@ -17,7 +17,7 @@ public class TaskServiceTests
     [Fact]
     public async Task GetTasks_FiltersByStatus()
     {
-        using var testDb = new SqliteTestDatabase();
+        using var testDb = new SqlServerTestDatabase();
         using (var seedDb = testDb.CreateContext())
         {
             seedDb.ServiceTasks.AddRange(
@@ -44,7 +44,7 @@ public class TaskServiceTests
         // The service returning null is what the controller (Step 1.5) turns into a 404
         // ProblemDetails response - that HTTP translation is already covered by the manual
         // Scalar/curl checks. This test covers the service-layer half of that behaviour.
-        using var testDb = new SqliteTestDatabase();
+        using var testDb = new SqlServerTestDatabase();
         using var db = testDb.CreateContext();
         var service = BuildService(db);
 
@@ -56,7 +56,7 @@ public class TaskServiceTests
     [Fact]
     public async Task AssignTask_SetsTechnicianAndStatus()
     {
-        using var testDb = new SqliteTestDatabase();
+        using var testDb = new SqlServerTestDatabase();
         int taskId, technicianId;
         using (var seedDb = testDb.CreateContext())
         {
@@ -90,7 +90,7 @@ public class TaskServiceTests
     {
         // This is the project's main concurrency story: two "requests" load the same task,
         // one saves first, the second must be rejected instead of silently overwriting it.
-        using var testDb = new SqliteTestDatabase();
+        using var testDb = new SqlServerTestDatabase();
         int taskId, technicianId;
         using (var seedDb = testDb.CreateContext())
         {

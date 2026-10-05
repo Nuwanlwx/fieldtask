@@ -34,8 +34,8 @@ Every line carries the request's `{CorrelationId}`, so debugging a reported issu
 This is a focused exercise to keep full-stack patterns sharp, not production software. Some choices below are simplifications appropriate for a small demo; others are things a real deployment would need on top.
 
 **Database**
-- SQLite is a single file on one machine — fine for a demo, but it doesn't support multiple app instances writing concurrently and can't scale horizontally. Production would use SQL Server or PostgreSQL, with connection resiliency (`EnableRetryOnFailure`) for transient network failures.
-- The connection string sits in plain text in `appsettings.json`. That's harmless for a local SQLite file with no credentials, but a real connection string (with a password) would need to live in User Secrets locally and a secret manager (Azure Key Vault, AWS Secrets Manager) in deployed environments — never in source control.
+- Now on SQL Server (Developer Edition) instead of SQLite, with a real `rowversion` column backing optimistic concurrency — but it's still one local instance with no high availability. Production would run it as a managed service (Azure SQL, or SQL Server with an Always On availability group) and add connection resiliency (`EnableRetryOnFailure`) for transient network failures.
+- The connection string uses Windows (integrated) authentication with no password, so it's harmless in `appsettings.json` for now. A real deployment authenticating with SQL credentials would need that connection string moved to User Secrets locally and a secret manager (Azure Key Vault, AWS Secrets Manager) once deployed — never in source control.
 
 **Auth & security**
 - No `[Authorize]` yet — any client can currently mutate data. Phase 3 adds cookie-based JWT auth.

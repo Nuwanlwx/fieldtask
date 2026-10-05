@@ -16,8 +16,11 @@ public class FieldTaskDbContext(DbContextOptions<FieldTaskDbContext> options) : 
             entity.HasIndex(t => t.Status);
             entity.HasIndex(t => t.TechnicianId);
 
-            // Optimistic concurrency: EF adds "AND RowVersion = @original" to every UPDATE/DELETE.
-            entity.Property(t => t.RowVersion).IsConcurrencyToken();
+            // Optimistic concurrency: IsRowVersion() both maps this to SQL Server's native
+            // rowversion column type (auto-generated and changed by the engine on every write)
+            // and marks it as a concurrency token, so EF adds "AND RowVersion = @original" to
+            // every UPDATE/DELETE. IsConcurrencyToken() alone would only do the latter half.
+            entity.Property(t => t.RowVersion).IsRowVersion();
 
             entity.HasOne(t => t.Technician)
                   .WithMany(tech => tech.Tasks)
@@ -31,29 +34,5 @@ public class FieldTaskDbContext(DbContextOptions<FieldTaskDbContext> options) : 
         });
 
         base.OnModelCreating(modelBuilder);
-    }
-
-    public override int SaveChanges(bool acceptAllChangesOnSuccess)
-    {
-        StampRowVersions();
-        return base.SaveChanges(acceptAllChangesOnSuccess);
-    }
-
-    public override Task<int> SaveChangesAsync(
-        bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
-    {
-        StampRowVersions();
-        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
-    }
-
-    // SQLite can't generate row versions like SQL Server's rowversion column does,
-    // so give every inserted/updated ServiceTask a fresh random token ourselves.
-    private void StampRowVersions()
-    {
-        foreach (var entry in ChangeTracker.Entries<ServiceTask>()
-                     .Where(e => e.State is EntityState.Added or EntityState.Modified))
-        {
-            entry.Entity.RowVersion = Guid.NewGuid().ToByteArray();
-        }
     }
 }

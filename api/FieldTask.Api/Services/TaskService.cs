@@ -84,13 +84,22 @@ public class TaskService(FieldTaskDbContext db, IClock clock, ILogger<TaskServic
         if (!technicianExists)
             return new AssignTaskResult(AssignOutcome.TechnicianNotFound, null);
 
+        task.TechnicianId = dto.TechnicianId;
+        task.Status = TaskStatusEnum.Assigned;
+
+        // Force these two columns into the UPDATE even if their new values happen to match
+        // what's already stored (e.g. two requests both assigning the same technician). EF only
+        // issues an UPDATE - and only then checks RowVersion - for properties it considers
+        // "modified"; if a reassignment is a no-op by value, EF would otherwise skip the UPDATE
+        // entirely and the concurrency check below would never run, silently letting a stale
+        // write through.
+        db.Entry(task).Property(t => t.TechnicianId).IsModified = true;
+        db.Entry(task).Property(t => t.Status).IsModified = true;
+
         // Optimistic concurrency: tell EF Core "only apply this update if RowVersion in the
         // database still matches what the client last saw." If someone else changed the row
         // first, SaveChangesAsync throws DbUpdateConcurrencyException below.
         db.Entry(task).Property(t => t.RowVersion).OriginalValue = dto.RowVersion;
-
-        task.TechnicianId = dto.TechnicianId;
-        task.Status = TaskStatusEnum.Assigned;
 
         try
         {

@@ -35,7 +35,7 @@ builder.Services.AddCors(options => options.AddPolicy("AngularDev", policy => po
     .WithExposedHeaders(CorrelationIdMiddleware.HeaderName))); // lets Angular read the header
 
 builder.Services.AddDbContext<FieldTaskDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddSingleton<IClock, SystemClock>();
 
