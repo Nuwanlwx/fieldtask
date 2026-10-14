@@ -4,6 +4,11 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Windows Smart App Control blocks self-built, unsigned native apphost executables
+         (FieldTask.Api.exe) on this machine. Skipping apphost generation means `dotnet run`
+         launches the app through dotnet.exe itself - already Microsoft-signed and trusted -
+         instead of through that blocked .exe, with no other behavior change. -->
+    <UseAppHost>false</UseAppHost>
   </PropertyGroup>
 
   <ItemGroup>
