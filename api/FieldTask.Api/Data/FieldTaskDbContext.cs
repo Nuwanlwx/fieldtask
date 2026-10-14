@@ -8,9 +8,11 @@ public class FieldTaskDbContext(DbContextOptions<FieldTaskDbContext> options) : 
     public DbSet<Technician> Technicians => Set<Technician>();
     public DbSet<ServiceTask> ServiceTasks => Set<ServiceTask>();
     public DbSet<TaskNote> TaskNotes => Set<TaskNote>();
+    public DbSet<User> Users => Set<User>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+
         modelBuilder.Entity<ServiceTask>(entity =>
         {
             entity.HasIndex(t => t.Status);
@@ -32,6 +34,12 @@ public class FieldTaskDbContext(DbContextOptions<FieldTaskDbContext> options) : 
                   .HasForeignKey(n => n.ServiceTaskId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
+
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasIndex(u => u.Username).IsUnique();
+        });
+
 
         base.OnModelCreating(modelBuilder);
     }

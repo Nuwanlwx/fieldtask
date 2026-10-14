@@ -1,5 +1,6 @@
 using FieldTask.Api.Domain.Entities;
 using FieldTask.Api.Domain.Enums;
+using Microsoft.AspNetCore.Identity;
 
 namespace FieldTask.Api.Data;
 
@@ -7,6 +8,27 @@ public static class DbSeeder
 {
     public static void Seed(FieldTaskDbContext db)
     {
+        if (!db.Users.Any())
+        {
+            var hasher = new PasswordHasher<User>();
+
+            var users = new[]
+            {
+                new User { Username = "alice", Role = "Manager" },
+                new User { Username = "bruno", Role = "Technician" },
+                new User { Username = "chidi", Role = "Technician" }
+            };
+
+            // HashPassword needs a user instance (some hashing schemes mix in user data), but
+            // doesn't read anything else off it here - the instance is just a parameter shape.
+            users[0].PasswordHash = hasher.HashPassword(users[0], "manager123");
+            users[1].PasswordHash = hasher.HashPassword(users[1], "tech123");
+            users[2].PasswordHash = hasher.HashPassword(users[2], "tech123");
+
+            db.Users.AddRange(users);
+            db.SaveChanges();
+        }
+
         // Each table is checked on its own, so a partly seeded database heals itself.
         if (!db.Technicians.Any())
         {
