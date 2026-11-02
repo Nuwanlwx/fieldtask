@@ -4,6 +4,13 @@
     <a routerLink="/tasks" routerLinkActive="active">Tasks</a>
     <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
   </nav>
+
+  @if (auth.isLoggedIn()) {
+    <div class="session">
+      <span>{{ auth.username() }} ({{ auth.role() }})</span>
+      <button type="button" (click)="logout()">Log out</button>
+    </div>
+  }
 </header>
 
 <main>
