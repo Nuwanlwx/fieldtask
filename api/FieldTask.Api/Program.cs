@@ -38,6 +38,8 @@ builder.Services.AddDbContext<FieldTaskDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddSingleton<IClock, SystemClock>();
+builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+
 
 var app = builder.Build();
 
