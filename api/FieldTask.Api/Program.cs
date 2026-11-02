@@ -5,6 +5,9 @@ using FieldTask.Api.Services;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Serilog;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +43,34 @@ builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddSingleton<IClock, SystemClock>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer();
+
+// Configure (rather than set options eagerly above): this resolves IConfiguration from DI the
+// moment the token handler actually needs it, after the host has finished building - so it sees
+// the final configuration, including anything WebApplicationFactory overrides for tests. Reading
+// builder.Configuration directly here instead would capture whatever value existed before
+// builder.Build() ran, which test overrides applied during Build() would never reach.
+builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+    .Configure<IConfiguration>((options, config) =>
+    {
+        var signingKey = config["Jwt:SigningKey"]
+            ?? throw new InvalidOperationException("Jwt:SigningKey is not configured.");
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = "FieldTask.Api",
+            ValidateAudience = true,
+            ValidAudience = "FieldTask.Web",
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
+        };
+    });
+
+builder.Services.AddAuthorization(options =>
+    options.AddPolicy("ManagerOnly", policy => policy.RequireRole("Manager")));
 
 var app = builder.Build();
 
@@ -57,9 +88,9 @@ app.UseSerilogRequestLogging();                     // 2. one summary log line p
 app.UseMiddleware<ExceptionHandlingMiddleware>();   // 3. catches anything thrown below, returns a 500 ProblemDetails
 app.UseHttpsRedirection();
 app.UseCors("AngularDev");                          // 4. before auth and endpoints
-// app.UseAuthentication();                         // 5. Phase 3
-// app.UseAuthorization();
-app.MapControllers();                               // 6. endpoints
+app.UseAuthentication();                            // 5. who are you
+app.UseAuthorization();                             // 6. are you allowed
+app.MapControllers();                               // 7. endpoints
 
 if (app.Environment.IsDevelopment())
 {

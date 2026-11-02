@@ -2,11 +2,13 @@ using FieldTask.Api.Domain.Enums;
 using FieldTask.Api.Dtos;
 using FieldTask.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace FieldTask.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/tasks")]
+[Authorize]
 public class TasksController(ITaskService taskService) : ControllerBase
 {
     // GET /api/v1/tasks?page=1&pageSize=10&status=Open&search=pump
@@ -77,6 +79,7 @@ public class TasksController(ITaskService taskService) : ControllerBase
     }
 
     // DELETE /api/v1/tasks/5
+    [Authorize(Policy = "ManagerOnly")]
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
