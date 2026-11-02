@@ -1,8 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
+import { Router } from '@angular/router';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
-import { catchError, EMPTY, map, of, switchMap, withLatestFrom } from 'rxjs';
+import { catchError, EMPTY, map, of, switchMap, tap, withLatestFrom } from 'rxjs';
 import { TaskApiService } from '../../../core/task-api.service';
 import { TaskDetailApiActions, TaskDetailPageActions } from './task-detail.actions';
 import { taskDetailFeature } from './task-detail.reducer';
@@ -12,6 +13,7 @@ export class TaskDetailEffects {
   private readonly actions$ = inject(Actions);
   private readonly api = inject(TaskApiService);
   private readonly store = inject(Store);
+  private readonly router = inject(Router);
 
   // Opened and Reload Requested both just mean "(re)fetch the current id" —
   // reading it from state (set by the reducer on Opened) instead of the
@@ -48,6 +50,29 @@ export class TaskDetailEffects {
               TaskDetailApiActions.assignFailure({
                 error: err.error?.detail ?? 'Failed to assign technician.',
                 conflict: err.status === 409,
+              }),
+            ),
+          ),
+        );
+      }),
+    ),
+  );
+
+  delete$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(TaskDetailPageActions.deleteRequested),
+      withLatestFrom(this.store.select(taskDetailFeature.selectId)),
+      switchMap(([, id]) => {
+        if (id == null) return EMPTY;
+        return this.api.deleteTask(id).pipe(
+          tap(() => this.router.navigate(['/tasks'])),
+          map(() => TaskDetailApiActions.deleteSuccess()),
+          catchError((err: HttpErrorResponse) =>
+            of(
+              TaskDetailApiActions.deleteFailure({
+                // 403 is already shown as a global banner by the auth interceptor —
+                // no need to duplicate it inline on the page too.
+                error: err.status === 403 ? null : (err.error?.detail ?? 'Failed to delete task.'),
               }),
             ),
           ),

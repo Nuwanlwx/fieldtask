@@ -55,4 +55,15 @@
   } @else if (assignError()) {
     <p class="error" role="alert">{{ assignError() }}</p>
   }
+
+  @if (auth.role() === 'Manager') {
+    <h3>Danger zone</h3>
+    <button type="button" (click)="delete()" [disabled]="deleting()">
+      {{ deleting() ? 'Deleting…' : 'Delete task' }}
+    </button>
+
+    @if (deleteError()) {
+      <p class="error" role="alert">{{ deleteError() }}</p>
+    }
+  }
 }

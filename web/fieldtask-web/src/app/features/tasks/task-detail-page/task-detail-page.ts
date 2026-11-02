@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
+import { AuthService } from '../../../core/auth/auth.service';
 import { TaskDetailPageActions } from '../state/task-detail.actions';
 import { taskDetailFeature } from '../state/task-detail.reducer';
 
@@ -16,6 +17,7 @@ import { taskDetailFeature } from '../state/task-detail.reducer';
 export class TaskDetailPage {
   private readonly route = inject(ActivatedRoute);
   private readonly store = inject(Store);
+  protected readonly auth = inject(AuthService);
 
   readonly task = this.store.selectSignal(taskDetailFeature.selectTask);
   readonly loading = this.store.selectSignal(taskDetailFeature.selectLoading);
@@ -23,6 +25,8 @@ export class TaskDetailPage {
   readonly assigning = this.store.selectSignal(taskDetailFeature.selectAssigning);
   readonly assignError = this.store.selectSignal(taskDetailFeature.selectAssignError);
   readonly assignConflict = this.store.selectSignal(taskDetailFeature.selectAssignConflict);
+  readonly deleting = this.store.selectSignal(taskDetailFeature.selectDeleting);
+  readonly deleteError = this.store.selectSignal(taskDetailFeature.selectDeleteError);
 
   technicianId: number | null = null;
 
@@ -43,5 +47,10 @@ export class TaskDetailPage {
 
   reload(): void {
     this.store.dispatch(TaskDetailPageActions.reloadRequested());
+  }
+
+  delete(): void {
+    if (!confirm('Delete this task? This cannot be undone.')) return;
+    this.store.dispatch(TaskDetailPageActions.deleteRequested());
   }
 }

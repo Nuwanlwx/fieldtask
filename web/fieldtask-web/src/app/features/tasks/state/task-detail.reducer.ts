@@ -51,6 +51,23 @@ export const taskDetailFeature = createFeature({
       assignError: error,
       assignConflict: conflict,
     })),
+
+    on(TaskDetailPageActions.deleteRequested, (state) => ({
+      ...state,
+      deleting: true,
+      deleteError: null,
+    })),
+
+    on(TaskDetailApiActions.deleteSuccess, (state) => ({
+      ...state,
+      deleting: false,
+    })),
+
+    on(TaskDetailApiActions.deleteFailure, (state, { error }) => ({
+      ...state,
+      deleting: false,
+      deleteError: error,
+    })),
   ),
 });
 
@@ -64,4 +81,6 @@ export const {
   selectAssigning,
   selectAssignError,
   selectAssignConflict,
+  selectDeleting,
+  selectDeleteError,
 } = taskDetailFeature;

@@ -12,6 +12,8 @@ export const TaskDetailPageActions = createActionGroup({
     // task's id and rowVersion out of the already-loaded task in state,
     // so the component never has to know what a RowVersion even is.
     'Assign Requested': props<{ technicianId: number }>(),
+    // No payload, same reasoning as Reload Requested — the effect reads the id from state.
+    'Delete Requested': emptyProps(),
   },
 });
 
@@ -22,5 +24,9 @@ export const TaskDetailApiActions = createActionGroup({
     'Task Loaded Failure': props<{ error: string }>(),
     'Assign Success': props<{ task: TaskDetailDto }>(),
     'Assign Failure': props<{ error: string; conflict: boolean }>(),
+    'Delete Success': emptyProps(),
+    // null error means "already shown elsewhere" (a 403 surfaces via the global
+    // notification banner, not this page's inline error).
+    'Delete Failure': props<{ error: string | null }>(),
   },
 });

@@ -13,6 +13,13 @@
   }
 </header>
 
+@if (notifications.message(); as msg) {
+  <div class="banner" role="alert">
+    <span>{{ msg }}</span>
+    <button type="button" (click)="notifications.clear()">&times;</button>
+  </div>
+}
+
 <main>
   <router-outlet />
 </main>

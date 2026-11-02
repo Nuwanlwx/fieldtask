@@ -11,6 +11,9 @@ export interface TaskDetailState {
   // 409 is distinct from a plain failure: the UI tells the user to reload and
   // retry, rather than just "something went wrong, try again".
   assignConflict: boolean;
+
+  deleting: boolean;
+  deleteError: string | null;
 }
 
 export const initialTaskDetailState: TaskDetailState = {
@@ -21,4 +24,6 @@ export const initialTaskDetailState: TaskDetailState = {
   assigning: false,
   assignError: null,
   assignConflict: false,
+  deleting: false,
+  deleteError: null,
 };
