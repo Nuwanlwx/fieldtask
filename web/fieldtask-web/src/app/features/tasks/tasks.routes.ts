@@ -7,6 +7,7 @@ import { TasksEffects } from './state/tasks.effects';
 import { tasksFeature } from './state/tasks.reducer';
 import { TaskDetailPage } from './task-detail-page/task-detail-page';
 import { TaskListPage } from './task-list-page/task-list-page';
+import { SuggestTaskPage } from './suggest-task-page/suggest-task-page';
 
 export const TASKS_ROUTES: Routes = [
   {
@@ -15,6 +16,11 @@ export const TASKS_ROUTES: Routes = [
     // Registered here, not in app.config, so the tasks slice and its effects
     // only load when this lazy route tree is actually navigated to.
     providers: [provideState(tasksFeature), provideEffects(TasksEffects)],
+  },
+  {
+    // Must come before ':id', or '/tasks/suggest' would be parsed as the id param.
+    path: 'suggest',
+    component: SuggestTaskPage,
   },
   {
     path: ':id',

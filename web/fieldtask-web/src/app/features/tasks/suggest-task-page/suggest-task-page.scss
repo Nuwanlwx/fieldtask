@@ -1,0 +1,59 @@
+.hint {
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.complaint-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 480px;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.85rem;
+    gap: 0.25rem;
+  }
+
+  textarea {
+    font: inherit;
+    resize: vertical;
+  }
+
+  button {
+    align-self: start;
+  }
+}
+
+.draft {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  .summary {
+    color: #555;
+    font-style: italic;
+  }
+
+  label {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.85rem;
+    gap: 0.25rem;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.error {
+  color: #b00020;
+}

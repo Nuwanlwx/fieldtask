@@ -9,7 +9,7 @@ namespace FieldTask.Api.Controllers;
 [ApiController]
 [Route("api/v1/tasks")]
 [Authorize]
-public class TasksController(ITaskService taskService) : ControllerBase
+public class TasksController(ITaskService taskService, IAiSuggestionService aiSuggestionService) : ControllerBase
 {
     // GET /api/v1/tasks?page=1&pageSize=10&status=Open&search=pump
     [HttpGet]
@@ -91,6 +91,16 @@ public class TasksController(ITaskService taskService) : ControllerBase
 
         return NoContent();
     }
+
+    // POST /api/v1/tasks/suggest
+    [Authorize]
+    [HttpPost("suggest")]
+    public async Task<ActionResult<TaskSuggestionDto>> SuggestTask(SuggestTaskRequestDto dto, CancellationToken ct)
+    {
+        var suggestion = await aiSuggestionService.SuggestTaskAsync(dto.ComplaintText, ct);
+        return Ok(suggestion);
+    }
+
 
     // One place to build the 404 body, so every "not found" looks the same.
     private ObjectResult TaskNotFound(int id) =>

@@ -3,7 +3,15 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from './api-config';
 import { PagedResult } from './models/paged-result';
-import { AssignTaskDto, CreateTaskDto, TaskDetailDto, TaskListItemDto, TaskStatus } from './models/task.models';
+import {
+  AssignTaskDto,
+  CreateTaskDto,
+  SuggestTaskRequestDto,
+  TaskDetailDto,
+  TaskListItemDto,
+  TaskStatus,
+  TaskSuggestionDto,
+} from './models/task.models';
 
 export interface GetTasksParams {
   page?: number;
@@ -41,5 +49,9 @@ export class TaskApiService {
 
   deleteTask(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+
+  suggestTask(dto: SuggestTaskRequestDto): Observable<TaskSuggestionDto> {
+    return this.http.post<TaskSuggestionDto>(`${this.baseUrl}/suggest`, dto);
   }
 }

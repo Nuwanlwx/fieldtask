@@ -37,3 +37,13 @@ export interface AssignTaskDto {
   technicianId: number;
   rowVersion: string;
 }
+
+export interface SuggestTaskRequestDto {
+  complaintText: string;
+}
+
+export interface TaskSuggestionDto {
+  title: string;
+  priority: number;
+  summary: string;
+}

@@ -43,6 +43,9 @@ builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddSingleton<IClock, SystemClock>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IAiSuggestionService, AiSuggestionService>();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer();
 
