@@ -13,8 +13,14 @@ namespace FieldTask.Tests.TestSupport;
 // behaviour the optimistic-concurrency test (and the 409 conflict it checks for) depends on.
 public sealed class SqlServerTestDatabase : IDisposable
 {
-    private const string MasterConnectionString =
-        "Server=.;Database=master;Trusted_Connection=True;TrustServerCertificate=True";
+    // Local dev: Windows trusted auth against the machine's own SQL Server. CI overrides this
+    // (TEST_DB_CONNECTION env var) to point at the SQL auth service container instead - a Linux
+    // runner has no Windows trusted-auth story, so the default here would never work there.
+    private static string BaseConnectionString =>
+        Environment.GetEnvironmentVariable("TEST_DB_CONNECTION")
+        ?? "Server=.;Trusted_Connection=True;TrustServerCertificate=True";
+
+    private static string MasterConnectionString => $"{BaseConnectionString};Database=master";
 
     private readonly string _databaseName = $"FieldTaskTests_{Guid.NewGuid():N}";
 
@@ -26,7 +32,7 @@ public sealed class SqlServerTestDatabase : IDisposable
 
     public FieldTaskDbContext CreateContext() =>
         new(new DbContextOptionsBuilder<FieldTaskDbContext>()
-            .UseSqlServer($"Server=.;Database={_databaseName};Trusted_Connection=True;TrustServerCertificate=True")
+            .UseSqlServer($"{BaseConnectionString};Database={_databaseName}")
             .Options);
 
     public void Dispose()

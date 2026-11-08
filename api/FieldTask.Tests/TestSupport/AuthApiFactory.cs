@@ -13,6 +13,11 @@ public sealed class AuthApiFactory : WebApplicationFactory<Program>
 {
     public const string TestSigningKey = "test-only-signing-key-used-for-auth-endpoint-tests-32bytes+";
 
+    // Same CI override as SqlServerTestDatabase - see its comment.
+    private static string BaseConnectionString =>
+        Environment.GetEnvironmentVariable("TEST_DB_CONNECTION")
+        ?? "Server=.;Trusted_Connection=True;TrustServerCertificate=True";
+
     private readonly string _databaseName = $"FieldTaskTests_{Guid.NewGuid():N}";
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -22,8 +27,7 @@ public sealed class AuthApiFactory : WebApplicationFactory<Program>
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["Jwt:SigningKey"] = TestSigningKey,
-                ["ConnectionStrings:Default"] =
-                    $"Server=.;Database={_databaseName};Trusted_Connection=True;TrustServerCertificate=True",
+                ["ConnectionStrings:Default"] = $"{BaseConnectionString};Database={_databaseName}",
             });
         });
     }
@@ -33,8 +37,7 @@ public sealed class AuthApiFactory : WebApplicationFactory<Program>
         base.Dispose(disposing);
         if (!disposing) return;
 
-        using var connection = new SqlConnection(
-            "Server=.;Database=master;Trusted_Connection=True;TrustServerCertificate=True");
+        using var connection = new SqlConnection($"{BaseConnectionString};Database=master");
         connection.Open();
         using var command = connection.CreateCommand();
         command.CommandText = $"""
