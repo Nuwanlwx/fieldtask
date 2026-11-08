@@ -13,16 +13,25 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    # This password only exists for the lifetime of this one job's throwaway SQL Server
+    # container - it's destroyed when the job ends, so it's not a real secret and doesn't
+    # need to come from GitHub Secrets. That also sidesteps a real limitation: the
+    # `options` field below is evaluated before most expression contexts (including
+    # secrets) are available, so a ${{ secrets.* }} reference there fails workflow
+    # validation before any job even starts.
+    env:
+      CI_SQL_PASSWORD: "CiTest#2026Pwd!"
+
     services:
       sqlserver:
         image: mcr.microsoft.com/mssql/server:2022-latest
         env:
           ACCEPT_EULA: "Y"
-          MSSQL_SA_PASSWORD: ${{ secrets.TEST_DB_SA_PASSWORD }}
+          MSSQL_SA_PASSWORD: "CiTest#2026Pwd!"
         ports:
           - 1433:1433
         options: >-
-          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P '${{ secrets.TEST_DB_SA_PASSWORD }}' -C -Q 'SELECT 1' || exit 1"
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'CiTest#2026Pwd!' -C -Q 'SELECT 1' || exit 1"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
@@ -42,7 +51,7 @@ jobs:
 
       - name: Test
         env:
-          TEST_DB_CONNECTION: "Server=localhost,1433;User Id=sa;Password=${{ secrets.TEST_DB_SA_PASSWORD }};TrustServerCertificate=True"
+          TEST_DB_CONNECTION: "Server=localhost,1433;User Id=sa;Password=${{ env.CI_SQL_PASSWORD }};TrustServerCertificate=True"
         run: dotnet test api/FieldTask.Tests/FieldTask.Tests.csproj --no-build --configuration Release
 
   build-and-push:
