@@ -1,10 +1,12 @@
+using System.Diagnostics;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using FieldTask.Api.Dtos;
 
 namespace FieldTask.Api.Services;
 
-public class AiSuggestionService(IHttpClientFactory httpClientFactory, IConfiguration config) : IAiSuggestionService
+public class AiSuggestionService(IHttpClientFactory httpClientFactory, IConfiguration config, ITaskSearchService taskSearchService) : IAiSuggestionService
 {
     private const string SystemPrompt =
         "You are an assistant that converts a customer's free-text complaint into a structured " +
@@ -13,6 +15,25 @@ public class AiSuggestionService(IHttpClientFactory httpClientFactory, IConfigur
         "based on what the complaint implies.";
 
     public async Task<TaskSuggestionDto> SuggestTaskAsync(string complaintText, CancellationToken ct = default)
+    {
+        // Independent of each other - drafting doesn't need the search results, and the search
+        // doesn't need the draft - so run them concurrently instead of one after the other.
+        var draftTask = DraftTaskAsync(complaintText, ct);
+        var searchTask = taskSearchService.FindSimilarTasksAsync(complaintText, topN: 3, ct: ct);
+
+        await Task.WhenAll(draftTask, searchTask);
+
+        var (title, priority, summary) = await draftTask;
+        var matches = await searchTask;
+
+        return new TaskSuggestionDto(
+            title,
+            priority,
+            summary,
+            matches.Select(m => new PossibleDuplicateDto(m.TaskId, m.Title, m.Similarity)).ToList());
+    }
+
+    private async Task<(string Title, int Priority, string Summary)> DraftTaskAsync(string complaintText, CancellationToken ct)
     {
         var apiKey = config["Gemini:ApiKey"]
             ?? throw new InvalidOperationException("Gemini:ApiKey is not configured.");
@@ -56,14 +77,9 @@ public class AiSuggestionService(IHttpClientFactory httpClientFactory, IConfigur
         using var client = httpClientFactory.CreateClient();
         client.Timeout = TimeSpan.FromSeconds(20);
         var url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
-        using var request = new HttpRequestMessage(HttpMethod.Post, url);
-        request.Content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+        var requestJson = JsonSerializer.Serialize(requestBody);
 
-        using var response = await client.SendAsync(request, ct);
-        var body = await response.Content.ReadAsStringAsync(ct);
-
-        if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Gemini API call failed ({response.StatusCode}): {body}");
+        var body = await SendWithRetryAsync(client, url, requestJson, ct);
 
         using var doc = JsonDocument.Parse(body);
         var parts = doc.RootElement
@@ -74,9 +90,58 @@ public class AiSuggestionService(IHttpClientFactory httpClientFactory, IConfigur
         var functionCallPart = parts.EnumerateArray().First(p => p.TryGetProperty("functionCall", out _));
         var args = functionCallPart.GetProperty("functionCall").GetProperty("args");
 
-        return new TaskSuggestionDto(
-            Title: args.GetProperty("title").GetString() ?? string.Empty,
-            Priority: args.GetProperty("priority").GetInt32(),
-            Summary: args.GetProperty("summary").GetString() ?? string.Empty);
+        return (
+            args.GetProperty("title").GetString() ?? string.Empty,
+            args.GetProperty("priority").GetInt32(),
+            args.GetProperty("summary").GetString() ?? string.Empty);
+    }
+
+    // Gemini occasionally returns 503/429 under load, or the call just times out mid-queue -
+    // both are transient, worth a couple of retries rather than failing the whole suggestion.
+    private static readonly HttpStatusCode[] TransientStatusCodes =
+    [
+        HttpStatusCode.TooManyRequests,
+        HttpStatusCode.ServiceUnavailable,
+        HttpStatusCode.GatewayTimeout
+    ];
+
+    private static async Task<string> SendWithRetryAsync(HttpClient client, string url, string requestJson, CancellationToken ct)
+    {
+        const int maxAttempts = 3;
+
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = new StringContent(requestJson, Encoding.UTF8, "application/json")
+            };
+
+            HttpResponseMessage response;
+            try
+            {
+                response = await client.SendAsync(request, ct);
+            }
+            catch (TaskCanceledException) when (!ct.IsCancellationRequested && attempt < maxAttempts)
+            {
+                // HttpClient.Timeout elapsed, not caller cancellation - treat like a transient failure.
+                await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)), ct);
+                continue;
+            }
+
+            using (response)
+            {
+                var body = await response.Content.ReadAsStringAsync(ct);
+
+                if (response.IsSuccessStatusCode)
+                    return body;
+
+                if (!TransientStatusCodes.Contains(response.StatusCode) || attempt == maxAttempts)
+                    throw new InvalidOperationException($"Gemini API call failed ({response.StatusCode}): {body}");
+
+                await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)), ct);
+            }
+        }
+
+        throw new UnreachableException();
     }
 }

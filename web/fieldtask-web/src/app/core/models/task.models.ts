@@ -42,8 +42,16 @@ export interface SuggestTaskRequestDto {
   complaintText: string;
 }
 
+export interface PossibleDuplicateDto {
+  taskId: number;
+  title: string;
+  similarity: number;
+}
+
 export interface TaskSuggestionDto {
   title: string;
   priority: number;
   summary: string;
+  possibleDuplicates: PossibleDuplicateDto[];
 }
+

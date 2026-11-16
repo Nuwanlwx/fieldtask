@@ -3,10 +3,12 @@ using FieldTask.Api.Domain.Entities;
 using FieldTask.Api.Domain.Enums;
 using FieldTask.Api.Dtos;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+
 
 namespace FieldTask.Api.Services;
 
-public class TaskService(FieldTaskDbContext db, IClock clock, ILogger<TaskService> logger) : ITaskService
+public class TaskService(FieldTaskDbContext db, IClock clock, ILogger<TaskService> logger, IEmbeddingService embeddingService) : ITaskService
 
 {
     public async Task<PagedResult<TaskListItemDto>> GetTasksAsync(
@@ -63,6 +65,18 @@ public class TaskService(FieldTaskDbContext db, IClock clock, ILogger<TaskServic
             Status = TaskStatusEnum.Open,
             CreatedAt = clock.UtcNow
         };
+        // Best-effort: task creation must succeed even if Gemini's embedding call is slow
+        // or down. Without an embedding this task just won't surface in duplicate-search
+        // results until a later backfill - it never blocks creating the task itself.
+        try
+        {
+            var embedding = await embeddingService.GetEmbeddingAsync(dto.Title, ct);
+            task.EmbeddingJson = JsonSerializer.Serialize(embedding);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Could not compute embedding for new task {Title} - continuing without it.", dto.Title);
+        }
 
         db.ServiceTasks.Add(task);
         await db.SaveChangesAsync(ct);

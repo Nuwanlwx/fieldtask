@@ -1,16 +1,13 @@
 <h2>Suggest a task (AI)</h2>
 
-<p class="hint">Describe the complaint in plain text. The AI drafts a task - nothing is created until you confirm it below.</p>
+<p class="hint">Describe the complaint in plain text. The AI drafts a task - nothing is created until you confirm it
+  below.</p>
 
 <form class="complaint-form" (ngSubmit)="getSuggestion()">
   <label>
     Complaint
-    <textarea
-      name="complaintText"
-      rows="4"
-      [(ngModel)]="complaintText"
-      placeholder="e.g. the AC unit on the 3rd floor is leaking water onto the server rack"
-    ></textarea>
+    <textarea name="complaintText" rows="4" [(ngModel)]="complaintText"
+      placeholder="e.g. the AC unit on the 3rd floor is leaking water onto the server rack"></textarea>
   </label>
 
   <button type="submit" [disabled]="loading() || !complaintText().trim()">
@@ -19,36 +16,46 @@
 </form>
 
 @if (error()) {
-  <p class="error" role="alert">{{ error() }}</p>
+<p class="error" role="alert">{{ error() }}</p>
 }
 
 @if (suggestion(); as draft) {
-  <section class="draft">
-    <h3>Draft task</h3>
-    <p class="summary">{{ draft.summary }}</p>
+<section class="draft">
+  <h3>Draft task</h3>
+  <p class="summary">{{ draft.summary }}</p>
+  @if (draft.possibleDuplicates.length > 0) {
+  <div class="duplicate-warning" role="alert">
+    <p><strong>This looks similar to an existing task:</strong></p>
+    <ul>
+      @for (match of draft.possibleDuplicates; track match.taskId) {
+      <li>
+        <a [routerLink]="['/tasks', match.taskId]" target="_blank">
+          #{{ match.taskId }} — {{ match.title }}
+        </a>
+        ({{ match.similarity * 100 | number: '1.0-0' }}% similar)
+      </li>
+      }
+    </ul>
+    <p class="hint">Review before confirming — this might already be reported.</p>
+  </div>
+  }
 
-    <label>
-      Title
-      <input type="text" name="editTitle" [ngModel]="editTitle()" (ngModelChange)="editTitle.set($event)" />
-    </label>
+  <label>
+    Title
+    <input type="text" name="editTitle" [ngModel]="editTitle()" (ngModelChange)="editTitle.set($event)" />
+  </label>
 
-    <label>
-      Priority (1-5)
-      <input
-        type="number"
-        name="editPriority"
-        min="1"
-        max="5"
-        [ngModel]="editPriority()"
-        (ngModelChange)="editPriority.set($event)"
-      />
-    </label>
+  <label>
+    Priority (1-5)
+    <input type="number" name="editPriority" min="1" max="5" [ngModel]="editPriority()"
+      (ngModelChange)="editPriority.set($event)" />
+  </label>
 
-    <div class="actions">
-      <button type="button" (click)="confirmAndCreate()" [disabled]="creating()">
-        {{ creating() ? 'Creating…' : 'Confirm & Create Task' }}
-      </button>
-      <button type="button" (click)="discardSuggestion()" [disabled]="creating()">Discard</button>
-    </div>
-  </section>
+  <div class="actions">
+    <button type="button" (click)="confirmAndCreate()" [disabled]="creating()">
+      {{ creating() ? 'Creating…' : 'Confirm & Create Task' }}
+    </button>
+    <button type="button" (click)="discardSuggestion()" [disabled]="creating()">Discard</button>
+  </div>
+</section>
 }

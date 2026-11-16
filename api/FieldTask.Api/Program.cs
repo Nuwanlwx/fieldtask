@@ -45,6 +45,8 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IAiSuggestionService, AiSuggestionService>();
+builder.Services.AddScoped<IEmbeddingService, EmbeddingService>();
+builder.Services.AddScoped<ITaskSearchService, TaskSearchService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer();

@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { TaskApiService } from '../../../core/task-api.service';
 import { TaskSuggestionDto } from '../../../core/models/task.models';
 
@@ -9,7 +9,7 @@ import { TaskSuggestionDto } from '../../../core/models/task.models';
 // request/response round trip (get a suggestion, confirm, create), not a
 // collection with filters/paging - a store slice would be unused machinery.
 @Component({
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   selector: 'app-suggest-task-page',
   styleUrl: './suggest-task-page.scss',
   templateUrl: './suggest-task-page.html',

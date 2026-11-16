@@ -33,6 +33,9 @@ namespace FieldTask.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("EmbeddingJson")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("Priority")
                         .HasColumnType("int");
 
