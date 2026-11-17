@@ -37,15 +37,44 @@ Every line carries the request's `{CorrelationId}`, so debugging a reported issu
 
 **Human-confirm gate**: the endpoint only returns a *draft* — it never creates a task itself. The Angular `SuggestTaskPage` shows the draft in an editable form; a real task is only created when the user explicitly clicks "Confirm & Create Task", which calls the existing `POST /tasks` with whatever the form holds at that point (the AI's draft, possibly hand-edited). This is a deliberate design choice, not a missing feature — an AI agent that can write to the database unsupervised is a different (and much riskier) thing to build and review.
 
+**Duplicate detection (RAG)**: before drafting, `POST /tasks/suggest` also searches existing `ServiceTasks` for likely duplicates, so a user doesn't end up creating a second task for something already reported. Every task's title is embedded into a vector when the task is created (`IEmbeddingService`, Gemini's `embedContent` endpoint) and stored as `ServiceTask.EmbeddingJson`. `ITaskSearchService.FindSimilarTasksAsync` embeds the new complaint text the same way, then scores it against every stored task by cosine similarity — `O(n·d)` where `n` is the number of stored tasks and `d` is the embedding dimension, done in memory since SQL Server has no native vector search, fine at this scale but the first thing to revisit if the task table grew large. Matches above an 0.80 similarity threshold come back to the frontend, which shows them in a warning box linking to the existing task. The draft call and the duplicate search run concurrently via `Task.WhenAll`, since neither depends on the other's result — no reason to pay their latency twice.
+
 **Why Gemini's free tier**: this is a learning/demo project, not a revenue-generating product, so a paid API wasn't worth the ongoing cost. The tradeoff is real and worth stating plainly: the free tier is noticeably less reliable under load than a paid tier — see the gaps below.
 
+**Retry with backoff**: Gemini's free-tier model does occasionally return a 503 ("high demand") or fail to respond before the `HttpClient` timeout — found by hitting this for real while testing Phase 2, not theorized in advance. `AiSuggestionService.SendWithRetryAsync` retries the draft call up to three times with exponential backoff (2s, 4s) when the failure is transient (429/503/504, or a client-side timeout), and fails fast on anything else — a 404 from a deprecated model name, for instance, which retrying would never fix.
+
 **Gaps, found by actually using it, not theorized in advance:**
-- **No retry on transient failures.** Gemini's free-tier model occasionally returns a 503 ("high demand") or simply doesn't respond before the `HttpClient` timeout. Right now that just fails the request; a production version would retry once or twice with backoff before giving up.
 - **No output schema validation.** The response is parsed assuming Gemini's `functionCall.args` always has `title`/`priority`/`summary` in the expected shape; a malformed or missing field currently throws rather than failing gracefully with a clear error.
 - **No rate limiting on the endpoint**, which matters more here than on the rest of the API since each call costs real (if currently free-tier) usage against an external quota.
 - **No evaluation set.** There's no automated check that the model's suggestions stay reasonable over time (e.g. if the prompt is edited later) — only manual spot-checking so far.
+- **No backfill for pre-existing tasks.** Tasks created before the embedding feature shipped have `EmbeddingJson = NULL` and are silently excluded from duplicate search until someone re-saves them or a backfill script runs.
 
 These are intentionally left as named next steps, not silently ignored.
+
+## Running the API in Docker locally
+
+The `Dockerfile` (built for Azure Container Apps) also works for local development, independent of whatever's set up natively on the host machine. A Linux container can't use Windows Trusted Connection to reach a local SQL Server instance, so this path needs SQL Server authentication instead of the Windows integrated auth used for native local dev:
+
+1. Enable **SQL Server and Windows Authentication mode** (SSMS → right-click the server → Properties → Security) and the **TCP/IP** protocol (SQL Server Configuration Manager), then restart the SQL Server service — both changes require a restart to take effect.
+2. Create a login scoped to just this database, rather than reusing `sa` or a personal account:
+   ```sql
+   CREATE LOGIN fieldtask_docker WITH PASSWORD = '...';
+   USE FieldTask;
+   CREATE USER fieldtask_docker FOR LOGIN fieldtask_docker;
+   ALTER ROLE db_owner ADD MEMBER fieldtask_docker;
+   ```
+3. Build and run, passing secrets as environment variables rather than baking them into the image:
+   ```powershell
+   docker build -t fieldtask-api -f api/FieldTask.Api/Dockerfile api/FieldTask.Api
+   docker run --rm -p 5233:8080 `
+     -e ConnectionStrings__Default="Server=host.docker.internal;Database=FieldTask;User Id=fieldtask_docker;Password=...;TrustServerCertificate=True" `
+     -e Gemini__ApiKey="..." `
+     -e Jwt__SigningKey="..." `
+     fieldtask-api
+   ```
+   `host.docker.internal` is Docker Desktop's DNS name for the host machine, as seen from inside the container. `TrustServerCertificate=True` is a local-dev-only shortcut around SQL Server's self-signed certificate — never appropriate against a real production server.
+
+This runs with `ASPNETCORE_ENVIRONMENT=Production` by default, same as the deployed container, so `/scalar/v1` isn't mapped; pass `-e ASPNETCORE_ENVIRONMENT=Development` as well if you want the interactive API docs.
 
 ## Production gaps (what this demo deliberately skips)
 
