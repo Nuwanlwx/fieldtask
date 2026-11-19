@@ -78,6 +78,12 @@ export class SuggestTaskPage {
         ? `You've reached the suggestion limit. Try again in ${retryAfter} seconds.`
         : "You've reached the suggestion limit. Try again shortly.";
     }
+    if (err.status === 503) {
+      return 'AI suggestions are temporarily unavailable. You can still create the task manually.';
+    }
+    if (err.status === 502) {
+      return 'The AI returned an unusable suggestion. Try again, or create the task manually.';
+    }
     return 'Could not get a suggestion. Try again.';
   }
 }
