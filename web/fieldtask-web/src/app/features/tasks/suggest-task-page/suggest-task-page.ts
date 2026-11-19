@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -43,8 +44,8 @@ export class SuggestTaskPage {
         this.editPriority.set(suggestion.priority);
         this.loading.set(false);
       },
-      error: () => {
-        this.error.set('Could not get a suggestion. Try again.');
+      error: (err: HttpErrorResponse) => {
+        this.error.set(this.describeSuggestError(err));
         this.loading.set(false);
       },
     });
@@ -69,5 +70,14 @@ export class SuggestTaskPage {
 
   discardSuggestion(): void {
     this.suggestion.set(null);
+  }
+  private describeSuggestError(err: HttpErrorResponse): string {
+    if (err.status === 429) {
+      const retryAfter = Number(err.headers.get('Retry-After'));
+      return retryAfter > 0
+        ? `You've reached the suggestion limit. Try again in ${retryAfter} seconds.`
+        : "You've reached the suggestion limit. Try again shortly.";
+    }
+    return 'Could not get a suggestion. Try again.';
   }
 }

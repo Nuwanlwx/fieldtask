@@ -3,6 +3,8 @@ using FieldTask.Api.Dtos;
 using FieldTask.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using FieldTask.Api.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace FieldTask.Api.Controllers;
 
@@ -95,6 +97,7 @@ public class TasksController(ITaskService taskService, IAiSuggestionService aiSu
     // POST /api/v1/tasks/suggest
     [Authorize]
     [HttpPost("suggest")]
+    [EnableRateLimiting(RateLimitPolicies.AiSuggest)]
     public async Task<ActionResult<TaskSuggestionDto>> SuggestTask(SuggestTaskRequestDto dto, CancellationToken ct)
     {
         var suggestion = await aiSuggestionService.SuggestTaskAsync(dto.ComplaintText, ct);

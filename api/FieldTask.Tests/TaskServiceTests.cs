@@ -11,8 +11,10 @@ public class TaskServiceTests
 {
     // NullLogger.Instance satisfies TaskService's ILogger<TaskService> dependency without
     // writing anywhere - the tests don't care what gets logged, only what TaskService returns.
-    private static TaskService BuildService(FieldTask.Api.Data.FieldTaskDbContext db) =>
-        new(db, new FakeClock(new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc)), NullLogger<TaskService>.Instance);
+    private static TaskService BuildService(FieldTask.Api.Data.FieldTaskDbContext db, IEmbeddingService? embeddings = null) =>
+    new(db, new FakeClock(new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc)),
+        NullLogger<TaskService>.Instance, embeddings ?? new FakeEmbeddingService());
+
 
     [Fact]
     public async Task GetTasks_FiltersByStatus()

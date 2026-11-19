@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using FieldTask.Api.Data;
 using FieldTask.Api.Middleware;
+using FieldTask.Api.RateLimiting;
 using FieldTask.Api.Services;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
@@ -35,7 +36,7 @@ builder.Services.AddCors(options => options.AddPolicy("AngularDev", policy => po
     .AllowAnyHeader()
     .AllowAnyMethod()
     .AllowCredentials() // needed in Phase 3 so the browser sends the auth cookie
-    .WithExposedHeaders(CorrelationIdMiddleware.HeaderName))); // lets Angular read the header
+    .WithExposedHeaders(CorrelationIdMiddleware.HeaderName, "Retry-After"))); // lets Angular read these headers
 
 builder.Services.AddDbContext<FieldTaskDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
@@ -47,6 +48,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<IAiSuggestionService, AiSuggestionService>();
 builder.Services.AddScoped<IEmbeddingService, EmbeddingService>();
 builder.Services.AddScoped<ITaskSearchService, TaskSearchService>();
+builder.Services.AddFieldTaskRateLimiting();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer();
@@ -95,7 +97,9 @@ app.UseHttpsRedirection();
 app.UseCors("AngularDev");                          // 4. before auth and endpoints
 app.UseAuthentication();                            // 5. who are you
 app.UseAuthorization();                             // 6. are you allowed
-app.MapControllers();                               // 7. endpoints
+app.UseRateLimiter();                               // 7. after auth: needs User for the partition key,
+                                                    //    and unauthenticated 401s never spend anyone's budget
+app.MapControllers();                               // 8. endpoints
 
 if (app.Environment.IsDevelopment())
 {
